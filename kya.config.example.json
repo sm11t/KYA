@@ -1,0 +1,9 @@
+{
+  "port": 3456,
+  "host": "localhost",
+  "upstream": "http://localhost:4001/mcp",
+  "policyDir": "./policies",
+  "dbPath": "./kya.sqlite",
+  "jwtSecret": "change-me",
+  "x402": false
+}
