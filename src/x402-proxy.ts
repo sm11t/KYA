@@ -4,7 +4,10 @@ import type { Ledger } from "./ledger.ts";
 import type { WalletManager } from "./wallet.ts";
 import { findPolicy, checkPolicy } from "./policy.ts";
 import { extractAgentId } from "./identity.ts";
-import { parseX402Challenge, createPaymentReceipt, attachPaymentProof } from "./x402.ts";
+import { parseX402Challenge, createPaymentReceipt, createRealPaymentReceipt, attachPaymentProof } from "./x402.ts";
+import type { ChainConfig } from "./chain.ts";
+
+export type X402Mode = "simulated" | "onchain";
 
 interface X402ProxyDeps {
   upstreamUrl: string;
@@ -13,6 +16,8 @@ interface X402ProxyDeps {
   ledger: Ledger;
   walletManager: WalletManager;
   jwtSecret?: string;
+  mode?: X402Mode;
+  chainConfig?: ChainConfig;
 }
 
 export function createX402ProxyHandler(deps: X402ProxyDeps): (req: Request) => Promise<Response> {
@@ -121,7 +126,27 @@ export function createX402ProxyHandler(deps: X402ProxyDeps): (req: Request) => P
         budget.recordSpend(sessionId, toolName, x402Cost);
 
         // Create payment receipt and retry
-        const receipt = createPaymentReceipt(challenge, wallet);
+        const mode = deps.mode || "simulated";
+        let receipt;
+        if (mode === "onchain" && deps.chainConfig) {
+          const onchainWallet = walletManager.getOnchainWallet(agentId);
+          if (!onchainWallet) {
+            budget.refundSpend(sessionId, toolName, x402Cost);
+            return jsonRpcError(id, -32001, "No onchain wallet found for agent");
+          }
+          const privateKey = await walletManager.decryptWalletKey(agentId, deps.jwtSecret || "");
+          if (!privateKey) {
+            budget.refundSpend(sessionId, toolName, x402Cost);
+            return jsonRpcError(id, -32001, "Failed to decrypt wallet key");
+          }
+          receipt = await createRealPaymentReceipt(
+            challenge,
+            { agentId, address: onchainWallet.address, mode: "onchain", privateKey },
+            deps.chainConfig,
+          );
+        } else {
+          receipt = createPaymentReceipt(challenge, wallet);
+        }
         const retryRequest = new Request(upstreamUrl, {
           method: "POST",
           headers: {

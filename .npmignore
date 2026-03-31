@@ -1,0 +1,8 @@
+demo/
+test/
+*.sqlite
+*.sqlite-*
+.env
+.git/
+kya.config.json
+node_modules/

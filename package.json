@@ -1,9 +1,19 @@
 {
-  "name": "kya",
+  "name": "kya-proxy",
   "version": "0.1.0",
+  "description": "The spending control layer for AI agents — budgets, policies, and audit trails for paid MCP tools",
   "type": "module",
+  "main": "src/index.ts",
   "bin": {
     "kya": "./src/cli.ts"
+  },
+  "files": ["src/", "policies/", "kya.config.example.json", "README.md", "LICENSE"],
+  "keywords": ["mcp", "ai-agents", "payments", "x402", "budget", "proxy", "audit"],
+  "author": "Asmit Datta",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sm11t/KYA"
   },
   "scripts": {
     "dev": "bun run --watch src/index.ts",
@@ -18,6 +28,7 @@
     "@types/bun": "latest"
   },
   "dependencies": {
-    "jose": "^6.2.2"
+    "jose": "^6.2.2",
+    "viem": "^2.47.6"
   }
 }

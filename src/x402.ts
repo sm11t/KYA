@@ -1,4 +1,6 @@
-import type { WalletConfig } from "./wallet.ts";
+import type { WalletConfig, OnchainWalletConfig } from "./wallet.ts";
+import type { ChainConfig } from "./chain.ts";
+import { transferUsdc } from "./chain.ts";
 
 export interface X402Challenge {
   price: number;
@@ -42,6 +44,26 @@ export function parseX402Challenge(response: Response): X402Challenge | null {
 export function createPaymentReceipt(challenge: X402Challenge, wallet: WalletConfig): X402Receipt {
   return {
     txHash: `0x${crypto.randomUUID().replace(/-/g, "")}`,
+    payer: wallet.address,
+    amount: challenge.price,
+    currency: challenge.currency,
+    timestamp: Date.now(),
+  };
+}
+
+export async function createRealPaymentReceipt(
+  challenge: X402Challenge,
+  wallet: OnchainWalletConfig & { privateKey: string },
+  chainConfig: ChainConfig,
+): Promise<X402Receipt> {
+  const txHash = await transferUsdc({
+    privateKey: wallet.privateKey,
+    to: challenge.recipient,
+    amountCents: challenge.price,
+    config: chainConfig,
+  });
+  return {
+    txHash,
     payer: wallet.address,
     amount: challenge.price,
     currency: challenge.currency,
