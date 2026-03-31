@@ -1,0 +1,9 @@
+{
+  "agent": "default",
+  "sessionBudget": 1000,
+  "perCallMax": 100,
+  "allowedTools": [],
+  "blockedTools": [],
+  "rateLimit": { "maxCallsPerMinute": 60 },
+  "alertThresholds": [0.5, 0.8, 0.95]
+}

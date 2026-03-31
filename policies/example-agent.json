@@ -1,0 +1,9 @@
+{
+  "agent": "coding-agent",
+  "sessionBudget": 500,
+  "perCallMax": 50,
+  "allowedTools": ["web_search", "code_review", "file_read"],
+  "blockedTools": ["send_email", "transfer_funds"],
+  "rateLimit": { "maxCallsPerMinute": 30 },
+  "alertThresholds": [0.5, 0.8, 0.95]
+}
