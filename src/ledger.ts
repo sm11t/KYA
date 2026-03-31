@@ -76,6 +76,36 @@ export class Ledger {
       .map(mapRow);
   }
 
+  getTotalCalls(): number {
+    const row = this.db.query("SELECT COUNT(*) as cnt FROM ledger").get() as { cnt: number };
+    return row.cnt;
+  }
+
+  getBlockedCalls(): number {
+    const row = this.db.query("SELECT COUNT(*) as cnt FROM ledger WHERE blocked = 1").get() as { cnt: number };
+    return row.cnt;
+  }
+
+  getAgentBreakdown(): { agentId: string; totalSpent: number; callCount: number; blockedCount: number }[] {
+    const rows = this.db
+      .query(
+        `SELECT agentId,
+                COALESCE(SUM(CASE WHEN blocked = 0 THEN costCents ELSE 0 END), 0) as totalSpent,
+                COUNT(*) as callCount,
+                SUM(CASE WHEN blocked = 1 THEN 1 ELSE 0 END) as blockedCount
+         FROM ledger GROUP BY agentId`,
+      )
+      .all() as { agentId: string; totalSpent: number; callCount: number; blockedCount: number }[];
+    return rows;
+  }
+
+  getAgentCalls(agentId: string): LedgerEntry[] {
+    return this.db
+      .query("SELECT * FROM ledger WHERE agentId = ? ORDER BY timestamp DESC")
+      .all(agentId)
+      .map(mapRow);
+  }
+
   close(): void {
     this.db.close();
   }

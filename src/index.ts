@@ -15,6 +15,7 @@ const proxyHandler = createProxyHandler({
   policies,
   budget,
   ledger,
+  jwtSecret: config.jwtSecret,
 });
 
 const server = startServer({
@@ -23,6 +24,7 @@ const server = startServer({
   proxyHandler,
   budget,
   ledger,
+  jwtSecret: config.jwtSecret,
 });
 
 console.log(`[KYA] Know Your Agent proxy started`);

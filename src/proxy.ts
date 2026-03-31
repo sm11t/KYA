@@ -2,12 +2,14 @@ import type { Policy } from "./types.ts";
 import type { BudgetTracker } from "./budget.ts";
 import type { Ledger } from "./ledger.ts";
 import { findPolicy, checkPolicy } from "./policy.ts";
+import { extractAgentId } from "./identity.ts";
 
 interface ProxyDeps {
   upstreamUrl: string;
   policies: Policy[];
   budget: BudgetTracker;
   ledger: Ledger;
+  jwtSecret?: string;
 }
 
 export function createProxyHandler(deps: ProxyDeps): (req: Request) => Promise<Response> {
@@ -25,7 +27,7 @@ export function createProxyHandler(deps: ProxyDeps): (req: Request) => Promise<R
 
     if (method === "tools/call") {
       const toolName = (params?.name as string) || "unknown";
-      const agentId = req.headers.get("X-Agent-Id") || "anonymous";
+      const agentId = await extractAgentId(req, deps.jwtSecret || "");
       const sessionId = req.headers.get("X-Session-Id") || crypto.randomUUID();
       const costCents = parseInt(req.headers.get("X-Tool-Cost") || "0", 10);
 
