@@ -8,7 +8,8 @@
     "test": "bun test",
     "demo": "bun run demo/run-demo.ts",
     "demo:mock": "bun run demo/mock-upstream.ts",
-    "demo:traffic": "bun run demo/simulate-traffic.ts"
+    "demo:traffic": "bun run demo/simulate-traffic.ts",
+    "demo:x402": "bun run demo/run-demo-x402.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"

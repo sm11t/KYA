@@ -52,6 +52,20 @@ export function renderDashboard(data: DashboardData): string {
     )
     .join("");
 
+  const walletRows = data.wallets
+    .map((w) => {
+      const pct = w.initialBalanceCents > 0 ? w.balanceCents / w.initialBalanceCents : 0;
+      const colorClass = pct > 0.5 ? "wallet-green" : pct > 0.2 ? "wallet-yellow" : "wallet-red";
+      return `
+      <tr>
+        <td>${escapeHtml(w.agentId)}</td>
+        <td class="${colorClass}">${formatCents(w.balanceCents)}</td>
+        <td>${formatCents(w.initialBalanceCents)}</td>
+        <td title="${escapeHtml(w.address)}">${escapeHtml(w.address.slice(0, 14))}...</td>
+      </tr>`;
+    })
+    .join("");
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -163,6 +177,9 @@ export function renderDashboard(data: DashboardData): string {
       font-style: italic;
       padding: 16px 0;
     }
+    .wallet-green { color: #3fb950; font-weight: 600; }
+    .wallet-yellow { color: #d29922; font-weight: 600; }
+    .wallet-red { color: #f85149; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -189,6 +206,25 @@ export function renderDashboard(data: DashboardData): string {
       <div class="value blocked">${data.blockedCalls}</div>
     </div>
   </div>
+
+  ${
+      data.wallets.length > 0
+        ? `<div class="cards">
+    <div class="card">
+      <div class="label">Total Wallet Balance</div>
+      <div class="value spend">${formatCents(data.totalWalletBalance)}</div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Wallets</h2>
+    <table>
+      <thead><tr><th>Agent</th><th>Balance</th><th>Initial</th><th>Address</th></tr></thead>
+      <tbody>${walletRows}</tbody>
+    </table>
+  </section>`
+        : ""
+    }
 
   <section>
     <h2>Agent Breakdown</h2>

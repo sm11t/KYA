@@ -1,5 +1,6 @@
 import type { BudgetTracker } from "./budget.ts";
 import type { Ledger } from "./ledger.ts";
+import type { WalletManager } from "./wallet.ts";
 import { getDashboardData } from "./dashboard-data.ts";
 import { renderDashboard } from "./dashboard.ts";
 import { createAgentToken } from "./identity.ts";
@@ -11,6 +12,7 @@ interface ServerDeps {
   budget: BudgetTracker;
   ledger: Ledger;
   jwtSecret?: string;
+  walletManager?: WalletManager;
 }
 
 const CORS_HEADERS: Record<string, string> = {
@@ -36,7 +38,7 @@ function jsonResponse(data: unknown, status = 200): Response {
 }
 
 export function startServer(deps: ServerDeps) {
-  const { port, host, proxyHandler, budget, ledger } = deps;
+  const { port, host, proxyHandler, budget, ledger, walletManager } = deps;
 
   const server = Bun.serve({
     port,
@@ -56,7 +58,7 @@ export function startServer(deps: ServerDeps) {
       }
 
       if (req.method === "GET" && url.pathname === "/dashboard") {
-        const data = getDashboardData(budget, ledger);
+        const data = getDashboardData(budget, ledger, walletManager);
         const html = renderDashboard(data);
         return withCors(
           new Response(html, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }),
@@ -64,7 +66,7 @@ export function startServer(deps: ServerDeps) {
       }
 
       if (req.method === "GET" && url.pathname === "/api/dashboard") {
-        const data = getDashboardData(budget, ledger);
+        const data = getDashboardData(budget, ledger, walletManager);
         return jsonResponse(data);
       }
 
@@ -92,6 +94,60 @@ export function startServer(deps: ServerDeps) {
           const secret = deps.jwtSecret || "change-me-to-a-random-secret";
           const token = await createAgentToken({ agentId, owner, permissions }, secret);
           return jsonResponse({ token });
+        } catch {
+          return jsonResponse({ error: "Invalid request body" }, 400);
+        }
+      }
+
+      // Wallet routes
+      if (req.method === "GET" && url.pathname === "/api/wallets") {
+        if (!walletManager) return jsonResponse({ error: "Wallet manager not configured" }, 501);
+        return jsonResponse(walletManager.listWallets());
+      }
+
+      const walletAgentMatch = url.pathname.match(/^\/api\/wallets\/([^/]+)\/transactions$/);
+      if (req.method === "GET" && walletAgentMatch) {
+        if (!walletManager) return jsonResponse({ error: "Wallet manager not configured" }, 501);
+        const agentId = decodeURIComponent(walletAgentMatch[1]);
+        return jsonResponse(walletManager.getTransactions(agentId));
+      }
+
+      const walletCreditMatch = url.pathname.match(/^\/api\/wallets\/([^/]+)\/credit$/);
+      if (req.method === "POST" && walletCreditMatch) {
+        if (!walletManager) return jsonResponse({ error: "Wallet manager not configured" }, 501);
+        try {
+          const body = await req.json();
+          const agentId = decodeURIComponent(walletCreditMatch[1]);
+          const amount = body.amount;
+          if (typeof amount !== "number" || amount <= 0) {
+            return jsonResponse({ error: "amount must be a positive number (in cents)" }, 400);
+          }
+          const newBalance = walletManager.credit(agentId, amount);
+          return jsonResponse({ agentId, newBalance });
+        } catch {
+          return jsonResponse({ error: "Invalid request body" }, 400);
+        }
+      }
+
+      const walletGetMatch = url.pathname.match(/^\/api\/wallets\/([^/]+)$/);
+      if (req.method === "GET" && walletGetMatch) {
+        if (!walletManager) return jsonResponse({ error: "Wallet manager not configured" }, 501);
+        const agentId = decodeURIComponent(walletGetMatch[1]);
+        const wallet = walletManager.getWallet(agentId);
+        if (!wallet) return jsonResponse({ error: "Wallet not found" }, 404);
+        return jsonResponse(wallet);
+      }
+
+      if (req.method === "POST" && url.pathname === "/api/wallets") {
+        if (!walletManager) return jsonResponse({ error: "Wallet manager not configured" }, 501);
+        try {
+          const body = await req.json();
+          const { agentId, initialBalance } = body;
+          if (!agentId || typeof initialBalance !== "number" || initialBalance < 0) {
+            return jsonResponse({ error: "agentId and initialBalance (in cents) are required" }, 400);
+          }
+          const wallet = walletManager.createWallet(agentId, initialBalance);
+          return jsonResponse(wallet, 201);
         } catch {
           return jsonResponse({ error: "Invalid request body" }, 400);
         }

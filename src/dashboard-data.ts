@@ -1,5 +1,6 @@
 import type { BudgetTracker } from "./budget.ts";
 import type { Ledger } from "./ledger.ts";
+import type { WalletManager, WalletConfig } from "./wallet.ts";
 import type { LedgerEntry, SessionState } from "./types.ts";
 
 export interface AgentBreakdown {
@@ -18,6 +19,13 @@ export interface SessionSummary {
   topTools: { tool: string; spend: number }[];
 }
 
+export interface WalletSummary {
+  agentId: string;
+  balanceCents: number;
+  initialBalanceCents: number;
+  address: string;
+}
+
 export interface DashboardData {
   totalSpentCents: number;
   totalCalls: number;
@@ -26,9 +34,11 @@ export interface DashboardData {
   agentBreakdown: AgentBreakdown[];
   recentCalls: LedgerEntry[];
   sessions: SessionSummary[];
+  wallets: WalletSummary[];
+  totalWalletBalance: number;
 }
 
-export function getDashboardData(budget: BudgetTracker, ledger: Ledger): DashboardData {
+export function getDashboardData(budget: BudgetTracker, ledger: Ledger, walletManager?: WalletManager): DashboardData {
   const totalCalls = ledger.getTotalCalls();
   const blockedCalls = ledger.getBlockedCalls();
   const agentBreakdown = ledger.getAgentBreakdown();
@@ -49,6 +59,16 @@ export function getDashboardData(budget: BudgetTracker, ledger: Ledger): Dashboa
       .map(([tool, spend]) => ({ tool, spend })),
   }));
 
+  const wallets: WalletSummary[] = walletManager
+    ? walletManager.listWallets().map((w) => ({
+        agentId: w.agentId,
+        balanceCents: w.balanceCents,
+        initialBalanceCents: w.initialBalanceCents,
+        address: w.address,
+      }))
+    : [];
+  const totalWalletBalance = wallets.reduce((sum, w) => sum + w.balanceCents, 0);
+
   return {
     totalSpentCents,
     totalCalls,
@@ -57,5 +77,7 @@ export function getDashboardData(budget: BudgetTracker, ledger: Ledger): Dashboa
     agentBreakdown,
     recentCalls,
     sessions,
+    wallets,
+    totalWalletBalance,
   };
 }

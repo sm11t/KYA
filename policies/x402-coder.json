@@ -1,0 +1,9 @@
+{
+  "agent": "x402-coder",
+  "sessionBudget": 5000,
+  "perCallMax": 200,
+  "allowedTools": ["premium_search", "deep_analysis", "code_audit"],
+  "blockedTools": ["send_email"],
+  "rateLimit": { "maxCallsPerMinute": 60 },
+  "alertThresholds": [0.5, 0.8, 0.95]
+}
