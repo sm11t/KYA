@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "demo": "bun run demo/run-demo.ts",
+    "demo:mock": "bun run demo/mock-upstream.ts",
+    "demo:traffic": "bun run demo/simulate-traffic.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"

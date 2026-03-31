@@ -1,0 +1,9 @@
+{
+  "agent": "creative-bot",
+  "sessionBudget": 200,
+  "perCallMax": 100,
+  "allowedTools": ["image_generate", "translate", "summarize"],
+  "blockedTools": [],
+  "rateLimit": { "maxCallsPerMinute": 120 },
+  "alertThresholds": [0.5, 0.8, 0.95]
+}

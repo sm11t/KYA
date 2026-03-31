@@ -1,0 +1,9 @@
+{
+  "agent": "research-bot",
+  "sessionBudget": 5000,
+  "perCallMax": 100,
+  "allowedTools": [],
+  "blockedTools": ["send_email", "transfer_funds"],
+  "rateLimit": { "maxCallsPerMinute": 120 },
+  "alertThresholds": [0.5, 0.8, 0.95]
+}

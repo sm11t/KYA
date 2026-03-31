@@ -50,6 +50,9 @@ export function createProxyHandler(deps: ProxyDeps): (req: Request) => Promise<R
         return jsonRpcError(id, -32001, check.reason || "Blocked by policy");
       }
 
+      // Reserve budget BEFORE the upstream call to prevent concurrent overspend
+      budget.recordSpend(sessionId, toolName, costCents);
+
       const start = performance.now();
       let upstreamResponse: Response;
       try {
@@ -59,11 +62,11 @@ export function createProxyHandler(deps: ProxyDeps): (req: Request) => Promise<R
           body: JSON.stringify(body),
         });
       } catch (err) {
+        // Upstream failed — refund the reserved spend
+        budget.refundSpend(sessionId, toolName, costCents);
         return jsonRpcError(id, -32603, `Upstream error: ${err}`);
       }
       const durationMs = Math.round(performance.now() - start);
-
-      budget.recordSpend(sessionId, toolName, costCents);
 
       ledger.logCall({
         sessionId,

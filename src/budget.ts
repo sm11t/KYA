@@ -37,6 +37,15 @@ export class BudgetTracker {
     session.recentCallTimestamps.push(Date.now());
   }
 
+  refundSpend(sessionId: string, toolName: string, costCents: number): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+
+    session.totalSpentCents = Math.max(0, session.totalSpentCents - costCents);
+    session.callCount = Math.max(0, session.callCount - 1);
+    session.toolSpend[toolName] = Math.max(0, (session.toolSpend[toolName] || 0) - costCents);
+  }
+
   checkAlerts(sessionId: string, policy: Policy): number[] {
     const session = this.sessions.get(sessionId);
     if (!session) return [];
